@@ -1,3 +1,198 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>रमन भाई का अर्निंग ऐप</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Arial, sans-serif; }
+        body { background: #0f0f1e; color: #fff; text-align: center; padding: 15px; }
+        
+        /* लॉगिन स्क्रीन */
+        #login-screen { display: block; max-width: 400px; margin: 50px auto; background: #1a1a2e; padding: 30px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+        
+        /* मुख्य ऐप स्क्रीन (शुरुआत में छुपी रहेगी) */
+        #main-app { display: none; max-width: 500px; margin: 0 auto; }
+        
+        /* रोबोट और वेलकम डेशबोर्ड */
+        .robot-dashboard { background: linear-gradient(135deg, #1e1e38, #2a2a50); padding: 20px; border-radius: 15px; margin-bottom: 20px; border: 2px solid #00ffcc; position: relative; }
+        .robot-icon { font-size: 50px; margin-bottom: 10px; animation: float 2s ease-in-out infinite; }
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+            100% { transform: translateY(0px); }
+        }
+        
+        .wallet-box { background: linear-gradient(135deg, #00ffcc, #0099ff); color: #000; padding: 10px 20px; border-radius: 10px; font-weight: bold; font-size: 22px; margin-top: 15px; display: inline-block; }
+        
+        /* कार्ड स्टाइल */
+        .card { background: #1a1a2e; padding: 20px; border-radius: 15px; margin-bottom: 15px; border: 1px solid #333; }
+        h2, h3 { color: #00ffcc; margin-bottom: 15px; }
+        
+        /* इनपुट और बटन्स */
+        input { width: 100%; padding: 12px; margin: 10px 0; border-radius: 8px; border: 1px solid #555; background: #111; color: #fff; font-size: 16px; }
+        .btn { display: block; width: 100%; padding: 14px; margin: 10px 0; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.2s; }
+        .btn-login { background: #00ffcc; color: #000; }
+        .btn-ads { background: #28a745; color: white; font-size: 18px; animation: pulse 1.5s infinite; }
+        .btn-redeem-code { background: #ff9900; color: black; }
+        .btn-upi { background: #0099ff; color: white; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { box-shadow: 0 0 15px #28a745; }
+            100% { transform: scale(1); }
+        }
+
+        /* रिडीम कोड दिखने का बॉक्स */
+        #code-display { display: none; background: #333; padding: 15px; border-radius: 8px; font-size: 20px; font-weight: bold; color: #ffff00; border: 2px dashed #ff9900; margin-top: 10px; letter-spacing: 2px; }
+    </style>
+</head>
+<body>
+
+    <div id="login-screen">
+        <div class="robot-icon">🤖</div>
+        <h3>स्वागत है भाई!</h3>
+        <p style="color: #aaa; font-size: 14px; margin-bottom: 15px;">आगे बढ़ने के लिए अपनी ईमेल आईडी डालें</p>
+        <input type="email" id="email-input" placeholder="अपनी ईमेल आईडी लिखें (e.g. raman@gmail.com)">
+        <button class="btn btn-login" onclick="appLogin()">ऐप में प्रवेश करें</button>
+    </div>
+
+    <div id="main-app">
+        
+        <div class="robot-dashboard">
+            <div class="robot-icon">🤖</div>
+            <div id="welcome-text" style="font-size: 16px; font-weight: bold;">हेलो प्लेयर!</div>
+            <div style="font-size: 12px; color: #aaa;" id="display-email">email@gmail.com</div>
+            
+            <div class="wallet-box">
+                आपका बैलेंस: ₹<span id="user-balance">0.00</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>💰 वॉच ऐड (Watch Ads)</h3>
+            <p style="font-size: 13px; color: #ccc; margin-bottom: 10px;">एक विज्ञापन देखने पर आपको 10% यानी ₹0.10 मिलेंगे!</p>
+            <button class="btn btn-ads" onclick="watchAd()">📺 वीडियो ऐड देखें और कमाएं</button>
+        </div>
+
+        <div class="card">
+            <h3>💸 पैसे निकालें (मिनिमम ₹10)</h3>
+            <p style="font-size: 13px; color: #aaa; margin-bottom: 15px;">बैलेंस ₹10 होते ही आप नीचे दिए गए ऑप्शन चुन सकते हैं</p>
+            
+            <button class="btn btn-redeem-code" onclick="redeemAsCode()">🎁 डायरेक्ट ₹10 का रिडीम कोड लें</button>
+            <div id="code-display"></div>
+            
+            <hr style="border: 1px solid #333; margin: 20px 0;">
+            
+            <input type="text" id="upi-input" placeholder="अपनी UPI ID डालें (e.g. raman@ybl)">
+            <button class="btn btn-upi" onclick="redeemAsUPI()">🏦 यूपीआई (UPI) में ट्रांसफर करें</button>
+        </div>
+
+    </div>
+
+<script>
+    // बैलेंस और ईमेल को मोबाइल की मेमोरी (localStorage) से लोड करना
+    let balance = parseFloat(localStorage.getItem('raman_app_balance')) || 0.00;
+    let userEmail = localStorage.getItem('raman_app_email') || "";
+
+    // अगर यूज़र पहले से लॉगिन है, तो सीधे ऐप दिखाएं
+    window.onload = function() {
+        if (userEmail !== "") {
+            showMainApp();
+        }
+    };
+
+    // लॉगिन फंक्शन
+    function appLogin() {
+        let email = document.getElementById('email-input').value.trim();
+        if (email === "" || !email.includes("@")) {
+            alert("कृपया एक सही ईमेल आईडी डालें!");
+            return;
+        }
+        
+        // डेटा सेव करना ताकि रिफ्रेश पर डिलीट न हो
+        userEmail = email;
+        localStorage.setItem('raman_app_email', userEmail);
+        localStorage.setItem('raman_app_balance', balance);
+        
+        showMainApp();
+    }
+
+    // ऐप स्क्रीन दिखाने का फंक्शन
+    function showMainApp() {
+        document.getElementById('login-screen').style.display = 'none';
+        document.getElementById('main-app').style.display = 'block';
+        document.getElementById('display-email').innerText = userEmail;
+        document.getElementById('user-balance').innerText = balance.toFixed(2);
+    }
+
+    // ऐड देखने का लॉजिक
+    function watchAd() {
+        alert("ऐड चालू हो रहा है... कृपया 3 सेकंड देखें।");
+        
+        setTimeout(function() {
+            let userShare = 0.10; // यूज़र का 10% हिस्सा = ₹0.10
+            balance += userShare;
+            
+            // बैलेंस को मोबाइल मेमोरी में अपडेट करें
+            localStorage.setItem('raman_app_balance', balance);
+            document.getElementById("user-balance").innerText = balance.toFixed(2);
+            
+            alert("🎉 आपने पूरा ऐड देखा! आपके वॉलेट में ₹0.10 जोड़ दिए गए हैं। यह पैसा हमेशा सेव रहेगा।");
+        }, 1500);
+    }
+
+    // डायरेक्ट रिडीम कोड देने का लॉजिक
+    function redeemAsCode() {
+        if (balance < 10) {
+            alert("⚠️ रिडीम कोड के लिए कम से कम ₹10 का बैलेंस होना ज़रूरी है। अभी और ऐड देखें!");
+            return;
+        }
+        
+        // ₹10 बैलेंस काटना (शून्य करना या कम करना)
+        balance -= 10;
+        localStorage.setItem('raman_app_balance', balance);
+        document.getElementById("user-balance").innerText = balance.toFixed(2);
+        
+        // रैंडम रिडीm कोड जनरेट करना
+        let characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let randomCode = 'RAMAN-';
+        for (let i = 0; i < 10; i++) {
+            randomCode += characters.charAt(Math.floor(Math.random() * characters.length));
+        }
+        
+        // स्क्रीन पर कोड दिखाना
+        let codeBox = document.getElementById('code-display');
+        codeBox.style.display = 'block';
+        codeBox.innerText = "आपका रिडीम कोड: " + randomCode;
+        
+        alert("✅ ₹10 कट गए हैं! आपका नया रिडीम कोड नीचे बॉक्स में आ गया है, इसे कॉपी कर लें।");
+    }
+
+    // यूपीआई ट्रांसफर लॉजिक
+    function redeemAsUPI() {
+        let upiId = document.getElementById('upi-input').value.trim();
+        if (upiId === "") {
+            alert("कृपया अपनी UPI ID डालें!");
+            return;
+        }
+        
+        if (balance < 10) {
+            alert("⚠️ यूपीआई ट्रांसफर के लिए कम से कम ₹10 का बैलेंस होना ज़रूरी है।");
+            return;
+        }
+        
+        // बैलेंस काटना
+        let transferredAmount = balance;
+        balance = 0.00; // पूरा बैलेंस शून्य करना
+        localStorage.setItem('raman_app_balance', balance);
+        document.getElementById("user-balance").innerText = balance.toFixed(2);
+        
+        alert("✅ सफलता! ₹" + transferredAmount.toFixed(2) + " आपकी यूपीआई आईडी (" + upiId + ") पर भेजने की रिक्वेस्ट सबमिट हो गई है। आपका बैलेंस अब 0 हो गया है।");
+    }
+</script>
+</body>
+</html>
 # Watch-Earn
 <!DOCTYPE html>
 <html lang="hi">
